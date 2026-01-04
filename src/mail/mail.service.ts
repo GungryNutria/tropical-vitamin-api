@@ -11,7 +11,7 @@ export class MailService {
             to: 'contacto@tropical-vitamin.com',
             subject: `Solicitar informacion de ${data.name}`,
             replyTo: data.email,
-            text: data.message,
+            text: `Telefono: ${data.phone} \nMensaje: ${data.message}`,
         })
     }
 }
