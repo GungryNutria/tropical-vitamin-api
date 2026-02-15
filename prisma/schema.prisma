@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tour {
+  id          Int      @id @default(autoincrement())
+  price       Decimal
+  location    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tourTranslations TourTranslation[]
+}
+
+model TourTranslation {
+  id          Int    @id @default(autoincrement())
+  language    String // 'es', 'en'
+  title       String
+  description String
+  category    String
+  duration    String
+
+  tourId Int
+  tour   Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@unique([tourId, language])
+}
