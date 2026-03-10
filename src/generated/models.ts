@@ -8,6 +8,6 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/Tour.js'
-export type * from './models/TourTranslation.js'
-export type * from './commonInputTypes.js'
+export type * from './models/Tour'
+export type * from './models/TourTranslation'
+export type * from './commonInputTypes'
