@@ -7,11 +7,15 @@ export class MailService {
     constructor(private readonly mailer: MailerService) {}
 
     async sendContactEmail(data: MailDto) {
+        const serviceText = data.service ? `Servicio: ${data.service}\n` : '';
+        const destinationText = data.destination ? `Destino: ${data.destination}\n` : '';
+        const travelersText = data.travelers ? `Viajeros: ${data.travelers}\n` : '';
+
         return await this.mailer.sendMail({
             to: 'contacto@tropical-vitamin.com',
             subject: `Solicitar informacion de ${data.name}`,
             replyTo: data.email,
-            text: `Telefono: ${data.phone} \nMensaje: ${data.message}`,
+            text: `Telefono: ${data.phone}\n${serviceText}${destinationText}${travelersText}Mensaje: ${data.message}`,
         })
     }
 }
