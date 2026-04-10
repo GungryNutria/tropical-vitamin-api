@@ -5,7 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UploadService {
-  private readonly uploadDir = join(process.cwd(), 'uploads');
+  // Use UPLOAD_DIR env var, fallback to ./uploads for local dev
+  private readonly uploadDir = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
 
   constructor() {
     // Ensure upload directory exists
