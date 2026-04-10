@@ -59,8 +59,11 @@ export class UploadService implements OnModuleInit {
 
     if (this.s3Client && this.isConfigured) {
       await this.uploadToS3(file, filename);
+      // Return full URL for SeaweedFS
+      return this.getFileUrl(filename);
     }
 
+    // Fallback: return a local path (for dev)
     return `/uploads/${filename}`;
   }
 
