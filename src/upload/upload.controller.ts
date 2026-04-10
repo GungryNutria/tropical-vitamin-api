@@ -3,6 +3,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { Response } from 'express';
 import axios from 'axios';
+import https from 'https';
+
+// Create an axios instance that follows redirects and allows self-signed certs
+const axiosInstance = axios.create({
+  maxRedirects: 5,
+  httpsAgent: new https.Agent({
+    rejectUnauthorized: false,
+  }),
+});
 
 @Controller('upload')
 export class UploadController {
@@ -32,7 +41,7 @@ export class UploadController {
     const fileUrl = this.uploadService.getFileUrl(filename);
     
     try {
-      const response = await axios.get(fileUrl, {
+      const response = await axiosInstance.get(fileUrl, {
         responseType: 'arraybuffer',
       });
       
@@ -40,6 +49,7 @@ export class UploadController {
       res.set('Cache-Control', 'public, max-age=31536000');
       res.send(response.data);
     } catch (error) {
+      console.error('Error fetching file:', error.message);
       throw new BadRequestException('File not found');
     }
   }

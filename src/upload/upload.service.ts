@@ -74,7 +74,7 @@ export class UploadService implements OnModuleInit {
       try {
         await this.uploadToS3(file, filename);
         console.log('File uploaded to S3:', filename);
-        // Return relative URL - the API will proxy to SeaweedFS
+        // Return relative URL so the API proxies it (avoids mixed content issues)
         return `/uploads/${filename}`;
       } catch (error) {
         console.error('S3 upload error:', error);
