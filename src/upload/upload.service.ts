@@ -1,62 +1,75 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
 
 @Injectable()
 export class UploadService {
-  // SeaweedFS master URL (configurable via env)
-  private readonly seaweedMaster = process.env.SEAWEED_MASTER || 'http://localhost:9333';
-  // SeaweedFS filer URL (configurable via env)
-  private readonly seaweedFiler = process.env.SEAWEED_FILER || 'http://localhost:8888';
-  // Use SeaweedFS if configured, fallback to local storage
-  private readonly useSeaweed = process.env.SEAWEED_FILER !== undefined;
+  private s3Client: S3Client | null = null;
+  private bucket: string;
+  private publicUrl: string;
+
+  constructor() {
+    // SeaweedFS S3 config
+    const endpoint = process.env.S3_ENDPOINT;
+    const accessKeyId = process.env.S3_ACCESS_KEY;
+    const secretAccessKey = process.env.S3_SECRET_KEY;
+    this.bucket = process.env.S3_BUCKET || 'tropical-vitamin';
+    this.publicUrl = process.env.S3_PUBLIC_URL || '';
+
+    if (endpoint && accessKeyId && secretAccessKey) {
+      this.s3Client = new S3Client({
+        endpoint,
+        credentials: {
+          accessKeyId,
+          secretAccessKey,
+        },
+        region: 'us-east-1', // SeaweedFS doesn't need region but SDK requires it
+        forcePathStyle: true, // Required for SeaweedFS
+      });
+    }
+  }
 
   async saveFile(file: Express.Multer.File): Promise<string> {
     const ext = extname(file.originalname);
     const filename = `${uuidv4()}${ext}`;
 
-    if (this.useSeaweed) {
-      return this.saveToSeaweed(file, filename);
+    if (this.s3Client) {
+      await this.uploadToS3(file, filename);
     }
 
-    // Fallback: return a local path (for dev)
     return `/uploads/${filename}`;
   }
 
-  private async saveToSeaweed(file: Express.Multer.File, filename: string): Promise<string> {
-    try {
-      // Upload to SeaweedFS filer
-      const response = await axios.put(`${this.seaweedFiler}/${filename}`, file.buffer, {
-        headers: {
-          'Content-Type': file.mimetype,
-        },
-      });
-
-      // Return the URL path for the file
-      return `/uploads/${filename}`;
-    } catch (error) {
-      console.error('SeaweedFS upload error:', error);
-      throw new Error('Failed to upload file to storage');
+  private async uploadToS3(file: Express.Multer.File, filename: string): Promise<void> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not configured');
     }
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: filename,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    });
+
+    await this.s3Client.send(command);
   }
 
-  getFilePath(filename: string): string {
-    // For SeaweedFS, files are served via the filer
-    if (this.useSeaweed) {
-      return `${this.seaweedFiler}/${filename}`;
-    }
-    // For local storage, return local path
-    return filename;
-  }
-
-  // Get the public URL for a file
   getFileUrl(filename: string): string {
-    if (this.useSeaweed) {
-      // If SEAWEED_PUBLIC_URL is set, use it, otherwise use filer
-      const publicUrl = process.env.SEAWEED_PUBLIC_URL || this.seaweedFiler;
-      return `${publicUrl}/${filename}`;
+    // Clean filename (remove /uploads/ prefix if present)
+    const cleanFilename = filename.replace(/^\/uploads\//, '');
+    
+    if (this.publicUrl) {
+      return `${this.publicUrl}/${cleanFilename}`;
     }
-    return `/uploads/${filename}`;
+    
+    // Fallback: construct URL from endpoint
+    const endpoint = process.env.S3_ENDPOINT;
+    if (endpoint) {
+      return `${endpoint}/${this.bucket}/${cleanFilename}`;
+    }
+    
+    return `/uploads/${cleanFilename}`;
   }
 }
