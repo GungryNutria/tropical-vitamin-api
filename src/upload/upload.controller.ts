@@ -29,7 +29,15 @@ export class UploadController {
 
   @Get(':filename')
   async getFile(@Param('filename') filename: string, @Res() res: Response) {
-    const filePath = this.uploadService.getFilePath(filename);
-    return res.sendFile(filePath);
+    const fileUrl = this.uploadService.getFileUrl(filename);
+    
+    // If using SeaweedFS, redirect to it
+    if (process.env.SEAWEED_FILER) {
+      return res.redirect(fileUrl);
+    }
+    
+    // For local storage, would need to serve the file
+    // But since we're moving to SeaweedFS, this is mainly for fallback
+    throw new BadRequestException('File storage not configured');
   }
 }
