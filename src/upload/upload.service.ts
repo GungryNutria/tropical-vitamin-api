@@ -1,16 +1,16 @@
-import { Injectable } from '@nestjs/common';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
 import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
-export class UploadService {
+export class UploadService implements OnModuleInit {
   private s3Client: S3Client | null = null;
   private bucket: string;
   private publicUrl: string;
+  private isConfigured: boolean = false;
 
-  constructor() {
-    // SeaweedFS S3 config
+  async onModuleInit() {
     const endpoint = process.env.S3_ENDPOINT;
     const accessKeyId = process.env.S3_ACCESS_KEY;
     const secretAccessKey = process.env.S3_SECRET_KEY;
@@ -24,9 +24,32 @@ export class UploadService {
           accessKeyId,
           secretAccessKey,
         },
-        region: 'us-east-1', // SeaweedFS doesn't need region but SDK requires it
-        forcePathStyle: true, // Required for SeaweedFS
+        region: 'us-east-1',
+        forcePathStyle: true,
       });
+
+      // Ensure bucket exists
+      await this.ensureBucketExists();
+      this.isConfigured = true;
+    }
+  }
+
+  private async ensureBucketExists(): Promise<void> {
+    if (!this.s3Client) return;
+
+    try {
+      // Check if bucket exists
+      await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      console.log(`Bucket '${this.bucket}' already exists`);
+    } catch (error) {
+      // Bucket doesn't exist, create it
+      console.log(`Creating bucket '${this.bucket}'...`);
+      try {
+        await this.s3Client.send(new CreateBucketCommand({ Bucket: this.bucket }));
+        console.log(`Bucket '${this.bucket}' created successfully`);
+      } catch (createError) {
+        console.error(`Failed to create bucket '${this.bucket}':`, createError.message);
+      }
     }
   }
 
@@ -34,7 +57,7 @@ export class UploadService {
     const ext = extname(file.originalname);
     const filename = `${uuidv4()}${ext}`;
 
-    if (this.s3Client) {
+    if (this.s3Client && this.isConfigured) {
       await this.uploadToS3(file, filename);
     }
 
@@ -57,14 +80,12 @@ export class UploadService {
   }
 
   getFileUrl(filename: string): string {
-    // Clean filename (remove /uploads/ prefix if present)
     const cleanFilename = filename.replace(/^\/uploads\//, '');
     
     if (this.publicUrl) {
       return `${this.publicUrl}/${cleanFilename}`;
     }
     
-    // Fallback: construct URL from endpoint
     const endpoint = process.env.S3_ENDPOINT;
     if (endpoint) {
       return `${endpoint}/${this.bucket}/${cleanFilename}`;
