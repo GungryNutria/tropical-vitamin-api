@@ -6,6 +6,7 @@ import { ToursModule } from './tours/tours.module';
 import { LanguagesModule } from './languages/languages.module';
 import { CategoriesModule } from './categories/categories.module';
 import { UploadModule } from './upload/upload.module';
+import { AuthModule } from './auth/auth.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -22,6 +23,7 @@ import { join } from 'path';
     LanguagesModule,
     CategoriesModule,
     UploadModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],
