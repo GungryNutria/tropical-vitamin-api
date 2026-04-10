@@ -17,6 +17,14 @@ export class UploadService implements OnModuleInit {
     this.bucket = process.env.S3_BUCKET || 'tropical-vitamin';
     this.publicUrl = process.env.S3_PUBLIC_URL || '';
 
+    console.log('Upload Service Config:', {
+      endpoint,
+      bucket: this.bucket,
+      publicUrl: this.publicUrl,
+      hasAccessKey: !!accessKeyId,
+      hasSecretKey: !!secretAccessKey,
+    });
+
     if (endpoint && accessKeyId && secretAccessKey) {
       this.s3Client = new S3Client({
         endpoint,
@@ -31,6 +39,9 @@ export class UploadService implements OnModuleInit {
       // Ensure bucket exists
       await this.ensureBucketExists();
       this.isConfigured = true;
+      console.log('S3 client configured successfully');
+    } else {
+      console.log('S3 client NOT configured - missing environment variables');
     }
   }
 
@@ -57,13 +68,22 @@ export class UploadService implements OnModuleInit {
     const ext = extname(file.originalname);
     const filename = `${uuidv4()}${ext}`;
 
+    console.log('Saving file:', filename, 'configured:', this.isConfigured);
+
     if (this.s3Client && this.isConfigured) {
-      await this.uploadToS3(file, filename);
-      // Return full URL for SeaweedFS
-      return this.getFileUrl(filename);
+      try {
+        await this.uploadToS3(file, filename);
+        const url = this.getFileUrl(filename);
+        console.log('File uploaded to S3:', url);
+        return url;
+      } catch (error) {
+        console.error('S3 upload error:', error);
+        throw error;
+      }
     }
 
     // Fallback: return a local path (for dev)
+    console.log('Using local fallback');
     return `/uploads/${filename}`;
   }
 
