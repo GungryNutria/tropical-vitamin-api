@@ -28,7 +28,7 @@ export class UploadService implements OnModuleInit {
 
     if (endpoint && accessKeyId && secretAccessKey) {
       // Ensure endpoint uses HTTPS
-      const httpsEndpoint = endpoint.replace(/^http:///, 'https://');
+      const httpsEndpoint = endpoint.replace(/^http:\/\//, 'https://');
       
       this.s3Client = new S3Client({
         endpoint: httpsEndpoint,
