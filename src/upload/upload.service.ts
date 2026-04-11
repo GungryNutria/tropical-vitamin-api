@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
 import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -34,6 +35,15 @@ export class UploadService implements OnModuleInit {
         },
         region: 'us-east-1',
         forcePathStyle: true,
+        // Handle redirects properly
+        requestHandler: new NodeHttpHandler({
+          httpsAgent: new (require('https').Agent)({
+            rejectUnauthorized: false,
+          }),
+          httpAgent: new (require('http').Agent)(),
+        }),
+        // Follow redirects
+        maxAttempts: 5,
       });
 
       // Ensure bucket exists
