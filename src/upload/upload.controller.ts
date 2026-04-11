@@ -42,6 +42,7 @@ export class UploadController {
   @Get(':filename')
   async getFile(@Param('filename') filename: string, @Res() res: Response) {
     const fileUrl = this.uploadService.getFileUrl(filename);
+    console.log('Fetching file from:', fileUrl);
     
     try {
       const response = await axiosInstance.get(fileUrl, {
