@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -124,6 +125,23 @@ export class UploadService implements OnModuleInit {
     });
 
     await this.s3Client.send(command);
+  }
+
+  async getPresignedUrl(filename: string): Promise<string> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not configured');
+    }
+
+    const cleanFilename = filename.replace(/^\/uploads\//, '');
+    
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: cleanFilename,
+    });
+
+    // URL válida por 7 días (máximo para evitar regenerar constantemente)
+    const signedUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 604800 });
+    return signedUrl;
   }
 
   getFileUrl(filename: string): string {

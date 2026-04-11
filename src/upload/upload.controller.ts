@@ -41,16 +41,18 @@ export class UploadController {
 
   @Get(':filename')
   async getFile(@Param('filename') filename: string, @Res() res: Response) {
-    const fileUrl = this.uploadService.getFileUrl(filename);
-    console.log('Fetching file from:', fileUrl);
-    
     try {
-      const response = await axiosInstance.get(fileUrl, {
+      // Get presigned URL and redirect to it
+      const presignedUrl = await this.uploadService.getPresignedUrl(filename);
+      console.log('Redirecting to presigned URL');
+      
+      // Fetch the file using the presigned URL
+      const response = await axiosInstance.get(presignedUrl, {
         responseType: 'arraybuffer',
       });
       
       res.set('Content-Type', response.headers['content-type'] || 'image/jpeg');
-      res.set('Cache-Control', 'public, max-age=31536000');
+      res.set('Cache-Control', 'public, max-age=86400'); // Cache por 1 día
       res.send(response.data);
     } catch (error) {
       console.error('Error fetching file:', error.message);
