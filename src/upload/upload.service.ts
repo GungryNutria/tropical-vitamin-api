@@ -27,22 +27,24 @@ export class UploadService implements OnModuleInit {
     });
 
     if (endpoint && accessKeyId && secretAccessKey) {
+      // Ensure endpoint uses HTTPS
+      const httpsEndpoint = endpoint.replace(/^http:///, 'https://');
+      
       this.s3Client = new S3Client({
-        endpoint,
+        endpoint: httpsEndpoint,
         credentials: {
           accessKeyId,
           secretAccessKey,
         },
         region: 'us-east-1',
         forcePathStyle: true,
-        // Handle redirects properly
+        // Handle redirects and self-signed certs
         requestHandler: new NodeHttpHandler({
           httpsAgent: new (require('https').Agent)({
             rejectUnauthorized: false,
           }),
           httpAgent: new (require('http').Agent)(),
         }),
-        // Follow redirects
         maxAttempts: 5,
       });
 
