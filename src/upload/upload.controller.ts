@@ -19,7 +19,10 @@ export class UploadController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('name') customName?: string,
+  ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -29,7 +32,7 @@ export class UploadController {
       throw new BadRequestException('Only image files are allowed');
     }
 
-    const url = await this.uploadService.saveFile(file);
+    const url = await this.uploadService.saveFile(file, customName);
     
     return {
       url,

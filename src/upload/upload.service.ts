@@ -64,9 +64,21 @@ export class UploadService implements OnModuleInit {
     }
   }
 
-  async saveFile(file: Express.Multer.File): Promise<string> {
+  async saveFile(file: Express.Multer.File, customName?: string): Promise<string> {
     const ext = extname(file.originalname);
-    const filename = `${uuidv4()}${ext}`;
+    // Use custom name if provided, otherwise generate UUID
+    // Sanitize custom name: lowercase, replace spaces with dashes, remove special chars
+    let filename: string;
+    if (customName) {
+      const sanitized = customName
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .substring(0, 50); // Limit length
+      filename = `${sanitized}${ext}`;
+    } else {
+      filename = `${uuidv4()}${ext}`;
+    }
 
     console.log('Saving file:', filename, 'configured:', this.isConfigured);
 
