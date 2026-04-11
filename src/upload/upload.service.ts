@@ -130,12 +130,16 @@ export class UploadService implements OnModuleInit {
     const cleanFilename = filename.replace(/^\/uploads\//, '');
     
     if (this.publicUrl) {
-      return `${this.publicUrl}/${cleanFilename}`;
+      // Ensure publicUrl uses HTTPS
+      const httpsPublicUrl = this.publicUrl.replace(/^http:\/\//, 'https://');
+      return `${httpsPublicUrl}/${cleanFilename}`;
     }
     
     const endpoint = process.env.S3_ENDPOINT;
     if (endpoint) {
-      return `${endpoint}/${this.bucket}/${cleanFilename}`;
+      // Ensure endpoint uses HTTPS
+      const httpsEndpoint = endpoint.replace(/^http:\/\//, 'https://');
+      return `${httpsEndpoint}/${this.bucket}/${cleanFilename}`;
     }
     
     return `/uploads/${cleanFilename}`;
