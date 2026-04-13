@@ -30,6 +30,12 @@ export class ToursService {
                     select: {
                         id: true,
                         adminName: true,
+                        translations: {
+                            where: { languageId: language.id },
+                            select: {
+                                name: true,
+                            },
+                        },
                     },
                 },
                 translations: {
