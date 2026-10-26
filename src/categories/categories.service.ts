@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
@@ -65,8 +65,24 @@ export class CategoriesService {
     }
 
     async deleteCategory(id: number) {
-        return this.prisma.category.delete({
-            where: { id },
+        return this.prisma.$transaction(async (tx) => {
+            const category = await tx.category.findUnique({
+                where: { id },
+                include: { _count: { select: { tours: true } } },
+            });
+            if (!category) {
+                throw new NotFoundException('Category not found');
+            }
+            const tourCount = category._count.tours;
+            if (tourCount > 0) {
+                throw new ConflictException({
+                    statusCode: 409,
+                    code: 'CATEGORY_HAS_TOURS',
+                    message: `La categoría tiene ${tourCount} ${tourCount === 1 ? 'tour' : 'tours'}. Muévelos a otra categoría antes de eliminarla.`,
+                    tourCount,
+                });
+            }
+            return tx.category.delete({ where: { id } });
         });
     }
 

@@ -1,5 +1,14 @@
-import { Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
+
+const PROTECTED_LANGUAGE_CODES = ['es', 'en'];
+
+const protectedLanguage = (code: string, action: string) =>
+    new ConflictException({
+        statusCode: 409,
+        code: 'LANGUAGE_PROTECTED',
+        message: `El idioma ${code} lo usa la web y no se puede ${action}.`,
+    });
 
 @Injectable()
 export class LanguagesService {
@@ -30,6 +39,16 @@ export class LanguagesService {
     }
 
     async updateLanguage(id: number, data: { code?: string; name?: string; isActive?: boolean }) {
+        if (data.code) {
+            const current = await this.prisma.language.findUnique({ where: { id } });
+            if (
+                current &&
+                PROTECTED_LANGUAGE_CODES.includes(current.code) &&
+                data.code.toLowerCase() !== current.code
+            ) {
+                throw protectedLanguage(current.code, 'cambiar');
+            }
+        }
         return this.prisma.language.update({
             where: { id },
             data: {
@@ -41,8 +60,13 @@ export class LanguagesService {
     }
 
     async deleteLanguage(id: number) {
-        return this.prisma.language.delete({
-            where: { id },
-        });
+        const language = await this.prisma.language.findUnique({ where: { id } });
+        if (!language) {
+            throw new NotFoundException('Language not found');
+        }
+        if (PROTECTED_LANGUAGE_CODES.includes(language.code)) {
+            throw protectedLanguage(language.code, 'eliminar');
+        }
+        return this.prisma.language.delete({ where: { id } });
     }
 }
