@@ -2,9 +2,6 @@
 export const TEST_ENV: Record<string, string> = {
   DATABASE_URL: 'postgresql://user:password@localhost:5432/test',
   JWT_SECRET: 'test-secret-test-secret-test-secret-0123',
-  AUTH0_DOMAIN: 'test.example.auth0.com',
-  AUTH0_AUDIENCE: 'https://api.example.com',
-  AGENCY_EMAIL: 'agency@example.com',
   MAIL_HOST: 'smtp.example.com',
   MAIL_PORT: '587',
   MAIL_USER: 'user@example.com',
