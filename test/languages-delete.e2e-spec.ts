@@ -36,9 +36,19 @@ describe('Language protections (e2e)', () => {
       expect(language.update).not.toHaveBeenCalled();
     });
 
-    it('PATCH name / isActive / same code -> 200', async () => {
+    it('D-11: PATCH isActive false -> 409 LANGUAGE_PROTECTED', async () => {
+      const res = await call('patch', 1).send({ isActive: false }).expect(409);
+      expect(res.body).toEqual({
+        statusCode: 409,
+        code: 'LANGUAGE_PROTECTED',
+        message: `El idioma ${code} lo usa la web y no se puede desactivar.`,
+      });
+      expect(language.update).not.toHaveBeenCalled();
+    });
+
+    it('PATCH name / isActive true / same code -> 200', async () => {
       language.update.mockResolvedValue({ id: 1 });
-      await call('patch', 1).send({ name: 'Nuevo', isActive: false }).expect(200);
+      await call('patch', 1).send({ name: 'Nuevo', isActive: true }).expect(200);
       await call('patch', 1).send({ code: code.toUpperCase() }).expect(200);
       expect(language.update).toHaveBeenCalledTimes(2);
     });
@@ -49,6 +59,12 @@ describe('Language protections (e2e)', () => {
     language.delete.mockResolvedValue({ id: 3, code: 'fr' });
     await call('delete', 3).expect(200);
     expect(language.delete).toHaveBeenCalledWith({ where: { id: 3 } });
+  });
+
+  it('D-11: PATCH isActive false of other language -> 200', async () => {
+    language.findUnique.mockResolvedValue({ id: 3, code: 'fr' });
+    language.update.mockResolvedValue({ id: 3 });
+    await call('patch', 3).send({ isActive: false }).expect(200);
   });
 
   it('PATCH code of other language -> 200', async () => {

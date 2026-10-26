@@ -39,14 +39,15 @@ export class LanguagesService {
     }
 
     async updateLanguage(id: number, data: { code?: string; name?: string; isActive?: boolean }) {
-        if (data.code) {
+        if (data.code || data.isActive === false) {
             const current = await this.prisma.language.findUnique({ where: { id } });
-            if (
-                current &&
-                PROTECTED_LANGUAGE_CODES.includes(current.code) &&
-                data.code.toLowerCase() !== current.code
-            ) {
-                throw protectedLanguage(current.code, 'cambiar');
+            if (current && PROTECTED_LANGUAGE_CODES.includes(current.code)) {
+                if (data.code && data.code.toLowerCase() !== current.code) {
+                    throw protectedLanguage(current.code, 'cambiar');
+                }
+                if (data.isActive === false) {
+                    throw protectedLanguage(current.code, 'desactivar');
+                }
             }
         }
         return this.prisma.language.update({
