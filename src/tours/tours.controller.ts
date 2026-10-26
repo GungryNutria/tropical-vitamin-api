@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { AdminJwtGuard } from "../auth/admin-jwt.guard";
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from "@nestjs/common";
 import { ToursService } from "./tours.service";
 
@@ -20,16 +22,19 @@ export class ToursController {
         return this.toursService.getTourById(parseInt(id));
     }
 
+    @UseGuards(AdminJwtGuard)
     @Post()
     async createTour(@Body() body: any) {
         return this.toursService.createTour(body);
     }
 
+    @UseGuards(AdminJwtGuard)
     @Patch(':id')
     async updateTour(@Param('id') id: string, @Body() body: any) {
         return this.toursService.updateTour(parseInt(id), body);
     }
 
+    @UseGuards(AdminJwtGuard)
     @Delete(':id')
     async deleteTour(@Param('id') id: string) {
         return this.toursService.deleteTour(parseInt(id));

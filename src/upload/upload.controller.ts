@@ -1,3 +1,5 @@
+import { UseGuards } from "@nestjs/common";
+import { AdminJwtGuard } from "../auth/admin-jwt.guard";
 import { Controller, Post, Get, Param, Body, UseInterceptors, UploadedFile, BadRequestException, Res } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
@@ -17,6 +19,7 @@ const axiosInstance = axios.create({
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
+  @UseGuards(AdminJwtGuard)
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
