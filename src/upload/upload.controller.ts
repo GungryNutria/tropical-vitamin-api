@@ -21,7 +21,7 @@ export class UploadController {
 
   @UseGuards(AdminJwtGuard)
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @Body('name') customName?: string,
