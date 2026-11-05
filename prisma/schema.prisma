@@ -113,3 +113,20 @@ model Language {
 
   @@index([code])
 }
+
+// ============================================
+// SOCIAL (spec 007)
+// ============================================
+
+// Una sola fila (id = 1): enlaces de redes y número de WhatsApp de la web (spec 007).
+model SocialSettings {
+  id               Int      @id @default(1)
+  facebookUrl      String?
+  facebookVisible  Boolean  @default(false)
+  instagramUrl     String?
+  instagramVisible Boolean  @default(false)
+  linkedinUrl      String?
+  linkedinVisible  Boolean  @default(false)
+  whatsappNumber   String   @default("529841681263")
+  updatedAt        DateTime @updatedAt
+}
