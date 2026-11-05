@@ -20,9 +20,9 @@ model Tour {
   id          Int      @id @default(autoincrement())
   adminTitle  String   // nombre interno para el panel admin
   price       Decimal  @db.Decimal(10, 2)
-  location    String
-  duration    Int      @default(60) // duración en minutos
-  img         String?
+  location    String?  // dato interno (spec 006)
+  duration    Int?     // minutos, dato interno (spec 006)
+  img         String?  // portada derivada: la escribe solo la API (= images[0])
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -31,9 +31,21 @@ model Tour {
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   translations TourTranslation[]
+  images      TourImage[]
 
   @@index([categoryId])
   @@index([isActive])
+}
+
+// Fotos de la galería de un tour, en orden (spec 006). Misma forma que en la rama de la spec 003.
+model TourImage {
+  id       Int    @id @default(autoincrement())
+  tourId   Int
+  tour     Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  filename String // solo el nombre: "abc.jpg" (la URL se arma con GET /upload/:filename)
+  position Int    // 0 = portada
+
+  @@index([tourId, position])
 }
 
 model TourTranslation {

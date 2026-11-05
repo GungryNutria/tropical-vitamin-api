@@ -39,7 +39,7 @@ const prismaMock = () => {
     {},
     {
       get: (_t, method) => async () =>
-        method === 'findMany' ? [] : { id: 1, translations: [] },
+        method === 'findMany' ? [] : { id: 1, translations: [], isActive: true, _count: { images: 1 } },
     },
   );
   return new Proxy(
@@ -85,7 +85,7 @@ async function createApp() {
 }
 
 const writes: Array<[string, string, object]> = [
-  ['post', '/tours', { price: 1, location: 'x', translations: [] }],
+  ['post', '/tours', { price: 1, location: 'x', images: ['x.jpg'], translations: [] }],
   ['patch', '/tours/1', { price: 2 }],
   ['delete', '/tours/1', {}],
   ['post', '/categories', { adminName: 'a', description: 'b' }],
