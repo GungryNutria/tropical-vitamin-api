@@ -9,6 +9,7 @@ import { LanguagesModule } from './languages/languages.module';
 import { CategoriesModule } from './categories/categories.module';
 import { UploadModule } from './upload/upload.module';
 import { AuthModule } from './auth/auth.module';
+import { SocialModule } from './social/social.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuthModule } from './auth/auth.module';
     CategoriesModule,
     UploadModule,
     AuthModule,
+    SocialModule,
   ],
   controllers: [],
   providers: [],
