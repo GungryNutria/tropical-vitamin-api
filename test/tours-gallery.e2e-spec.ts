@@ -10,7 +10,8 @@ describe('Tour gallery (spec 006, e2e con Prisma simulado)', () => {
     create: jest.fn(),
     update: jest.fn(),
   };
-  const tourImage = { deleteMany: jest.fn(), createMany: jest.fn() };
+  const tourImage = { deleteMany: jest.fn(), createMany: jest.fn(), count: jest.fn() };
+  const queryRaw = jest.fn();
   const tourTranslation = { upsert: jest.fn() };
   const language = { findFirst: jest.fn() };
   const prisma = {
@@ -19,7 +20,7 @@ describe('Tour gallery (spec 006, e2e con Prisma simulado)', () => {
     tourTranslation,
     language,
     $transaction: async (fn: (tx: unknown) => unknown) =>
-      fn({ tour, tourImage, tourTranslation }),
+      fn({ tour, tourImage, tourTranslation, $queryRaw: queryRaw }),
   };
 
   beforeAll(async () => {
@@ -36,8 +37,11 @@ describe('Tour gallery (spec 006, e2e con Prisma simulado)', () => {
     auth(request(app.getHttpServer()).patch(`/tours/${id}`)).send(body);
   const post = (body: object) =>
     auth(request(app.getHttpServer()).post('/tours')).send(body);
-  const current = (isActive: boolean, images: number) =>
-    tour.findUnique.mockResolvedValueOnce({ isActive, _count: { images } });
+  // Estado bloqueado con FOR UPDATE dentro de la transacción: isActive y número de fotos actuales.
+  const current = (isActive: boolean, images: number) => {
+    queryRaw.mockResolvedValueOnce([{ isActive }]);
+    tourImage.count.mockResolvedValueOnce(images);
+  };
 
   describe('GET /tours (publico)', () => {
     it('AC-1/AC-16: filtra visibles con foto, sin location ni duration, con images', async () => {
@@ -205,8 +209,18 @@ describe('Tour gallery (spec 006, e2e con Prisma simulado)', () => {
       expect(tour.update.mock.calls[0][0].data).toEqual({ isActive: true });
     });
 
+    it('F-1: lee el estado con SELECT ... FOR UPDATE dentro de la transaccion', async () => {
+      current(false, 2);
+      tour.update.mockResolvedValue({});
+      tour.findUnique.mockResolvedValueOnce({ id: 7, images: [] });
+      await patch(7, { isActive: true }).expect(200);
+      expect(queryRaw).toHaveBeenCalledTimes(1);
+      expect((queryRaw.mock.calls[0][0] as string[]).join('?')).toMatch(/FROM "Tour" WHERE "id" = \? FOR UPDATE/);
+      expect(queryRaw.mock.calls[0][1]).toBe(7);
+    });
+
     it('tour inexistente -> 404', async () => {
-      tour.findUnique.mockResolvedValueOnce(null);
+      queryRaw.mockResolvedValueOnce([]);
       await patch(99, { adminTitle: 'X' }).expect(404);
     });
   });

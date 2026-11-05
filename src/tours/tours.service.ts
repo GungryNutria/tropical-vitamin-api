@@ -186,18 +186,16 @@ export class ToursService {
         const { translations, adminTitle } = data;
         const { location, duration, images } = this.parseGalleryFields(data);
 
-        const current = await this.prisma.tour.findUnique({
-            where: { id },
-            select: { isActive: true, _count: { select: { images: true } } },
-        });
-        if (!current) {
-            throw new NotFoundException(`Tour ${id} no existe`);
-        }
-
-        const isActive = typeof data.isActive === 'boolean' ? data.isActive : current.isActive;
-        this.assertVisibleHasPhoto(isActive, images?.length ?? current._count.images);
-
         await this.prisma.$transaction(async (tx) => {
+            // Bloquea la fila: dos escrituras simultáneas se serializan y la regla del 409 se evalúa sobre el estado vigente.
+            const rows = await tx.$queryRaw<{ isActive: boolean }[]>`SELECT "isActive" FROM "Tour" WHERE "id" = ${id} FOR UPDATE`;
+            if (rows.length === 0) {
+                throw new NotFoundException(`Tour ${id} no existe`);
+            }
+            const isActive = typeof data.isActive === 'boolean' ? data.isActive : rows[0].isActive;
+            const imageCount = images ? images.length : await tx.tourImage.count({ where: { tourId: id } });
+            this.assertVisibleHasPhoto(isActive, imageCount);
+
             await tx.tour.update({
                 where: { id },
                 data: {
